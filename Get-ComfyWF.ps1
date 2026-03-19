@@ -4,7 +4,7 @@ param(
     [string]$InputFile
 )
 
-$imageExts = @('.png', '.jpg', '.jpeg', '.webp')
+$imageExts = @('.png')
 $videoExts = @('.mp4')
 
 $inputBaseName = [System.IO.Path]::GetFileNameWithoutExtension($InputFile)

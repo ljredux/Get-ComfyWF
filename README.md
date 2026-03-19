@@ -1,6 +1,6 @@
 # Get-ComfyWF
 
-Extract a workflow from an existing ComfyUI image or video and save it as a JSON workflow file that can be reopened in ComfyUI. Only likely to work with media saved via ComfyUI's native save image and save video nodes.
+Extract a workflow from an existing ComfyUI image or video and save it as a JSON workflow file that can be reopened in ComfyUI. Only likely to work with png and mp4 files saved via ComfyUI's native *Save Image* and *Save Video* nodes.
 
 Very much a work in progress, written for my own benefit while tweaking prompts and juggling output files. Powershell for now. Python later.
 
