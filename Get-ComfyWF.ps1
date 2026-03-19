@@ -52,7 +52,8 @@ if ($type -eq 'image') {
         exit 1
     }
 }
-else { # it's a video
+else {
+    # it's a video
     $ffprobeJson = & $tool -v quiet -print_format json -show_format $InputFile | ConvertFrom-Json
     if (-not $ffprobeJson -or -not $ffprobeJson.format -or -not $ffprobeJson.format.tags) {
         Write-Error "Failed to read metadata from video with ffprobe."
@@ -65,4 +66,11 @@ else { # it's a video
     }
 }
 
-$workflow | Set-Content -Path $outputFile -Encoding UTF8 -NoNewline
+try {
+    $workflow | Set-Content -Path $outputFile -Encoding UTF8 -NoNewline -ErrorAction Stop
+    Write-Host "Workflow saved to: $outputFile" 
+}
+catch {
+    Write-Error "Failed to write workflow file: $($_.Exception.Message)"
+    exit 1
+}
