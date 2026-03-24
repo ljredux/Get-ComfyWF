@@ -1,4 +1,5 @@
 #include "comfy_meta.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +16,7 @@ int dir_exists(const char *path);
 int file_exists(const char *path);
 const char *get_basename(const char *argv0);
 void get_workflows_path(char *out, size_t size);
-void join_path(char *out, size_t size, const char *a, const char *b);
+void join_paths(char *out, size_t size, int count, ...);
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -75,10 +76,7 @@ void get_workflows_path(char *out, size_t size) {
         return;
     }
 
-    char tmp[512];
-    join_path(tmp, sizeof(tmp), base, "user");
-    join_path(tmp, sizeof(tmp), tmp, "default");
-    join_path(out, size, tmp, "workflows");
+    join_paths(out, size, 4, base, "user", "default", "workflows");
 
     if (!dir_exists(out)) {
         out[0] = '\0';
@@ -86,15 +84,21 @@ void get_workflows_path(char *out, size_t size) {
     }
 }
 
-// Safely join two path components
-void join_path(char *out, size_t size, const char *a, const char *b) {
-    size_t len = strlen(a);
+void join_paths(char *out, size_t size, int count, ...) {
+    va_list args;
+    va_start(args, count);
 
-    snprintf(out, size, "%s", a);
+    out[0] = '\0';
 
-    if (len > 0 && a[len - 1] != PATH_SEP[0]) {
-        strncat(out, PATH_SEP, size - strlen(out) - 1);
+    for (int i = 0; i < count; i++) {
+        const char *part = va_arg(args, const char *);
+
+        if (i > 0 && strlen(out) > 0 && out[strlen(out) - 1] != PATH_SEP[0]) {
+            strncat(out, PATH_SEP, size - strlen(out) - 1);
+        }
+
+        strncat(out, part, size - strlen(out) - 1);
     }
 
-    strncat(out, b, size - strlen(out) - 1);
+    va_end(args);
 }
