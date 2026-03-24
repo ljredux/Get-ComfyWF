@@ -80,12 +80,10 @@ void get_workflows_path(char *out, size_t size) {
     join_path(tmp, sizeof(tmp), tmp, "default");
     join_path(out, size, tmp, "workflows");
 
-    if (!dir_exists(tmp)) {
+    if (!dir_exists(out)) {
         out[0] = '\0';
         return;
     }
-
-    join_path(out, size, tmp, "");
 }
 
 // Safely join two path components
