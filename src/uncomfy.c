@@ -1,5 +1,5 @@
 #include "comfy_meta.h"
-#include <stdarg.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,8 +15,8 @@ void show_usage(const char *argv0);
 int dir_exists(const char *path);
 int file_exists(const char *path);
 const char *get_basename(const char *argv0);
-void get_workflows_path(char *out, size_t size);
-void join_paths(char *out, size_t size, int count, ...);
+char *get_workflow_filename(const char *input_filename);
+char *get_workflows_path(void);
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -47,6 +47,23 @@ int main(int argc, char *argv[]) {
 
     fclose(fp);
 
+    // test workflow path & file logic
+    char *path = get_workflows_path();
+    if (path) {
+        printf("Workflows path: %s\n", path);
+        free(path);
+    } else {
+        printf("Failed to get workflows path\n");
+    }
+
+    char *filename = get_workflow_filename(argv[1]);
+    if (filename) {
+        printf("Workflow filename: %s\n", filename);
+        free(filename);
+    } else {
+        printf("Failed to get workflow filename\n");
+    }
+
     return 0;
 }
 
@@ -69,36 +86,50 @@ const char *get_basename(const char *argv0) {
     return name ? name + 1 : argv0;
 }
 
-void get_workflows_path(char *out, size_t size) {
-    const char *base = getenv("COMFYUI_PATH");
-    if (!base) {
-        out[0] = '\0';
-        return;
-    }
+// take input filename, strip path, replace extension with .json
+char *get_workflow_filename(const char *input_filename) {
+    const char *base = get_basename(input_filename);
 
-    join_paths(out, size, 4, base, "user", "default", "workflows");
+    const char *dot = strrchr(base, '.');
+    size_t base_len = dot ? (size_t)(dot - base) : strlen(base);
 
-    if (!dir_exists(out)) {
-        out[0] = '\0';
-        return;
-    }
+    size_t new_len = base_len + 5; // ".json"
+
+    char *result = malloc(new_len + 1);
+    if (!result) return NULL;
+
+    memcpy(result, base, base_len);
+    memcpy(result + base_len, ".json", 5);
+
+    result[new_len] = '\0';
+
+    return result;
 }
 
-void join_paths(char *out, size_t size, int count, ...) {
-    va_list args;
-    va_start(args, count);
+// If COMFYUI_PATH env var exists, assemble & return the workflows path,
+// otherwise, return the current working path.
+char *get_workflows_path(void) {
+    const char *base = getenv("COMFYUI_PATH");
 
-    out[0] = '\0';
+    char *result = malloc(PATH_MAX);
+    if (!result) return NULL;
 
-    for (int i = 0; i < count; i++) {
-        const char *part = va_arg(args, const char *);
+    if (base) {
+        int n = snprintf(result, PATH_MAX, "%s" PATH_SEP "user" PATH_SEP "default" PATH_SEP "workflows", base);
 
-        if (i > 0 && strlen(out) > 0 && out[strlen(out) - 1] != PATH_SEP[0]) {
-            strncat(out, PATH_SEP, size - strlen(out) - 1);
+        if (n > 0 && n < PATH_MAX && dir_exists(result)) {
+            return result;
         }
-
-        strncat(out, part, size - strlen(out) - 1);
     }
 
-    va_end(args);
+    char *cwd = getcwd(NULL, 0);
+    if (!cwd) {
+        result[0] = '\0';
+        return result;
+    }
+
+    snprintf(result, PATH_MAX, "%s", cwd);
+
+    free(cwd);
+    return result;
 }

@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-// Public function: extract metadata associated with a key in a comfyUI generated file
-// Returns dynamically allocated string (free this!) or NULL if not found
+// Extract metadata associated with a key in a comfyUI generated file
+// Return dynamically allocated string or NULL on failure
 char *get_metadata(FILE *fp, const char *key);
 
 #endif
