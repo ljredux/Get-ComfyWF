@@ -17,7 +17,7 @@ int file_exists(const char *path);
 const char *get_basename(const char *argv0);
 char *get_workflow_filename(const char *input_filename);
 char *get_workflows_path(void);
-int save_workflow(const char *input_filename, const char *jsondata);
+char *save_workflow(const char *input_filename, const char *jsondata);
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -40,7 +40,13 @@ int main(int argc, char *argv[]) {
 
     char *metadata = get_metadata(fp, "workflow");
     if (metadata) {
-        save_workflow(argv[1], metadata);
+        char *saved_path = save_workflow(argv[1], metadata);
+        if (saved_path) {
+            printf("Workflow saved to: %s\n", saved_path);
+            free(saved_path); 
+        } else {
+            printf("Failed to save workflow.\n");
+        }
         free(metadata);
     } else {
         printf("No workflow found.\n");
@@ -117,44 +123,38 @@ char *get_workflows_path(void) {
     return result;
 }
 
-int save_workflow(const char *input_filename, const char *jsondata) {
-
-    if (!input_filename || !jsondata) {
-        return -1;
-    }
+// Returns a newly allocated string with the full path on success, NULL on failure
+char *save_workflow(const char *input_filename, const char *jsondata) {
+    if (!input_filename || !jsondata) return NULL;
 
     char *workflows_path = get_workflows_path();
     char *workflow_filename = get_workflow_filename(input_filename);
-
     if (!workflows_path || !workflow_filename) {
         free(workflows_path);
         free(workflow_filename);
-        return -1;
+        return NULL;
     }
 
     char full_path[PATH_MAX];
     int n = snprintf(full_path, sizeof(full_path), "%s" PATH_SEP "%s", workflows_path, workflow_filename);
-
     free(workflows_path);
     free(workflow_filename);
 
-    if (n < 0 || n >= (int)sizeof(full_path)) {
-        return -1;
-    }
+    if (n < 0 || n >= (int)sizeof(full_path)) return NULL;
 
     FILE *fp = fopen(full_path, "wb");
     if (!fp) {
         perror("fopen");
-        return -1;
+        return NULL;
     }
 
     size_t len = strlen(jsondata);
     if (fwrite(jsondata, 1, len, fp) != len) {
         perror("fwrite");
         fclose(fp);
-        return -1;
+        return NULL;
     }
-
     fclose(fp);
-    return 0;
+
+    return strdup(full_path);
 }

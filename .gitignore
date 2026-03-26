@@ -1,4 +1,5 @@
 bin/
 
-*.png
+*.json
 *.mp4
+*.png
