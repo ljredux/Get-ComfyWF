@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         char *saved_path = save_workflow(argv[1], metadata);
         if (saved_path) {
             printf("Workflow saved to: %s\n", saved_path);
-            free(saved_path); 
+            free(saved_path);
         } else {
             printf("Failed to save workflow.\n");
         }
@@ -141,6 +141,14 @@ char *save_workflow(const char *input_filename, const char *jsondata) {
     free(workflow_filename);
 
     if (n < 0 || n >= (int)sizeof(full_path)) return NULL;
+
+    if (file_exists(full_path)) {
+        char response;
+        printf("File %s exists. Overwrite? (y/n): ", full_path);
+        if (scanf(" %c", &response) != 1 || (response != 'y' && response != 'Y')) {
+            return NULL;
+        }
+    }
 
     FILE *fp = fopen(full_path, "wb");
     if (!fp) {
