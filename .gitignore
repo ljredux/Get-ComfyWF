@@ -1,5 +1,6 @@
 # Build artefacts
 bin/
+*.exe
 
 # Files used for testing
 *.mp4
