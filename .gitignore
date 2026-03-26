@@ -1,5 +1,7 @@
+# Build artefacts
 bin/
 
-*.json
+# Files used for testing
 *.mp4
 *.png
+*.json
