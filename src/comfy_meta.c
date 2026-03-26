@@ -7,7 +7,7 @@
 static bool is_png(FILE *fp);
 static uint32_t read_be32(FILE *fp);
 static char *read_png_tEXt_chunk(FILE *fp, const char *key);
-static char *extract_from_mp4(FILE *fp, const char *key);
+static char *read_mp4_ilst_data(FILE *fp, const char *key);
 
 // Main public function
 char *get_metadata(FILE *fp, const char *key) {
@@ -20,7 +20,7 @@ char *get_metadata(FILE *fp, const char *key) {
     } else {
         // Assume MP4
         rewind(fp);
-        result = extract_from_mp4(fp, key);
+        result = read_mp4_ilst_data(fp, key);
     }
 
     return result;
@@ -95,9 +95,87 @@ static char *read_png_tEXt_chunk(FILE *fp, const char *key) {
     return NULL;
 }
 
-// Placeholder method
-static char *extract_from_mp4(FILE *fp, const char *key) {
-    (void)fp;
-    (void)key;
+// TODO: Revisit MP4 metadata parsing (below). Nested structure makes extraction tricky. 
+// It assumes metadata is stored as key/value pairs in ilst.data (as Comfy does it).
+typedef struct {
+    uint64_t size;
+    char type[5];
+    long start;
+} Box;
+
+static int read_box(FILE *fp, Box *box) {
+    box->start = ftell(fp);
+
+    uint32_t size32 = read_be32(fp);
+    if (fread(box->type, 1, 4, fp) != 4) return 0;
+    box->type[4] = '\0';
+
+    if (size32 == 1) {
+        uint64_t hi = read_be32(fp);
+        uint64_t lo = read_be32(fp);
+        box->size = (hi << 32) | lo;
+    } else {
+        box->size = size32;
+    }
+
+    if (box->size < 8) return 0;
+    return 1;
+}
+
+// Returns the value of a ComfyUI MP4 metadata entry matching the given key or NULL if not found.
+// The returned string must be freed.
+static char *read_mp4_ilst_data(FILE *fp, const char *key) {
+    fseek(fp, 0, SEEK_SET);
+    Box box;
+
+    // find moov
+    while (read_box(fp, &box)) {
+        if (!strcmp(box.type, "moov")) break;
+        fseek(fp, box.start + box.size, SEEK_SET);
+    }
+    if (strcmp(box.type, "moov")) return NULL;
+
+    long moov_end = box.start + box.size;
+
+    // find udta > meta > ilst
+    while (ftell(fp) < moov_end && read_box(fp, &box)) {
+        if (!strcmp(box.type, "udta")) {
+            long udta_end = box.start + box.size;
+            while (ftell(fp) < udta_end && read_box(fp, &box)) {
+                if (!strcmp(box.type, "meta")) {
+                    fseek(fp, 4, SEEK_CUR); // version/flags
+                    long meta_end = box.start + box.size;
+                    while (ftell(fp) < meta_end && read_box(fp, &box)) {
+                        if (!strcmp(box.type, "ilst")) {
+                            long ilst_end = box.start + box.size;
+                            while (ftell(fp) < ilst_end && read_box(fp, &box)) {
+                                // read data box inside each item
+                                long item_end = box.start + box.size;
+                                while (ftell(fp) < item_end && read_box(fp, &box)) {
+                                    if (!strcmp(box.type, "data")) {
+                                        fseek(fp, 8, SEEK_CUR); // type/locale
+                                        uint32_t len = box.size - 16;
+                                        char *text = malloc(len + 1);
+                                        fread(text, 1, len, fp);
+                                        text[len] = 0;
+
+                                        // check if matches key
+                                        if (strstr(text, key)) return text;
+                                        free(text);
+                                    }
+                                    fseek(fp, box.start + box.size, SEEK_SET);
+                                }
+                                fseek(fp, box.start + box.size, SEEK_SET);
+                            }
+                        }
+                        fseek(fp, box.start + box.size, SEEK_SET);
+                    }
+                }
+                fseek(fp, box.start + box.size, SEEK_SET);
+            }
+        }
+        fseek(fp, box.start + box.size, SEEK_SET);
+    }
+
     return NULL;
 }
