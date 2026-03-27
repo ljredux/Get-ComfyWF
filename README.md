@@ -27,7 +27,13 @@ Saves a JSON file containing the extracted workflow
 gcc src/*.c -o uncomfy.exe -O2 -s -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-unwind-tables -fomit-frame-pointer -Wl,--gc-sections
 ```
 
-This is optimised for both size *and* speed.
+### Linux
+
+```bash
+gcc src/*.c -o uncomfy -O2 -s -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -Wl,--gc-sections
+```
+
+This is optimised to produce a small, fast executable.
 
 ## License
 
