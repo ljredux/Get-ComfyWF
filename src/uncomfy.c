@@ -12,10 +12,10 @@
 #define PATH_SEP "/"
 #endif
 
-void show_usage(const char *argv0);
+void show_usage(const char *path);
 int dir_exists(const char *path);
 int file_exists(const char *path);
-const char *get_basename(const char *argv0);
+const char *get_basename(const char *path);
 char *get_workflow_filename(const char *input_filename);
 char *get_workflows_path(void);
 char *save_workflow(const char *input_filename, const char *jsondata);
@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void show_usage(const char *argv0) {
-    printf("Usage: %s <file>\n", get_basename(argv0));
+void show_usage(const char *path) {
+    printf("Usage: %s <file>\n", get_basename(path));
 }
 
 int dir_exists(const char *path) {
@@ -71,9 +71,9 @@ int file_exists(const char *path) {
     return stat(path, &st) == 0 && S_ISREG(st.st_mode);
 }
 
-const char *get_basename(const char *argv0) {
-    const char *name = strrchr(argv0, PATH_SEP[0]);
-    return name ? name + 1 : argv0;
+const char *get_basename(const char *path) {
+    const char *name = strrchr(path, PATH_SEP[0]);
+    return name ? name + 1 : path;
 }
 
 // take input filename, strip path, replace extension with .json
