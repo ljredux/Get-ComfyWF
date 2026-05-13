@@ -1,6 +1,6 @@
 # uncomfy
 
-Extract a workflow from an existing ComfyUI image or video and save it as a JSON workflow file that can be reopened in ComfyUI. Only likely to work with png and mp4 files saved via ComfyUI's native *Save Image* and *Save Video* nodes.
+Extract a workflow from an existing ComfyUI image or video and save it as a JSON workflow file that can be reopened in ComfyUI. Only likely to work with png and mp4 files saved via ComfyUI's native *Save Image* and *Save Video* nodes.  (Yes, this can be done by dropping a generated image onto ComfyUI, but an eventual goal is to extract only specific information with switches.)
 
 This standalone executable has *no* dependencies. Make it available system-wide by adding it to your PATH.
 
